@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useTravelStore } from '../../stores/travel'
 import { EXPENSE_CATEGORIES } from '../../constants'
-import { planTotalSpend, planSpendBreakdown } from '../../services/selectors'
+import { planTotalSpend, planSpendBreakdown, recordTotalSpend } from '../../services/selectors'
 import { formatMoney, formatDate } from '../../utils/format'
 import Modal from '../common/Modal.vue'
 import ImageUpload from '../common/ImageUpload.vue'
@@ -22,9 +22,6 @@ const breakdown = computed(() => planSpendBreakdown(props.plan))
 const budget = computed(() => Number(props.plan.budget) || 0)
 const balance = computed(() => budget.value - totalSpend.value)
 
-function recordTotal(r) {
-  return EXPENSE_CATEGORIES.reduce((s, { key }) => s + (Number(r[key]) || 0), 0)
-}
 
 // ===== 新增 / 编辑表单 =====
 const showForm = ref(false)
@@ -138,7 +135,7 @@ function save() {
         </div>
         <img v-if="r.photo" :src="r.photo" class="record-photo" alt="行程照片" />
         <div class="record-actions">
-          <span class="record-total">{{ formatMoney(recordTotal(r)) }}</span>
+          <span class="record-total">{{ formatMoney(recordTotalSpend(r)) }}</span>
           <button type="button" class="btn btn-ghost btn-sm" @click="openEdit(r)">编辑</button>
           <button
             type="button"

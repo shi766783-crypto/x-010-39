@@ -1,6 +1,49 @@
 import { TRIP_TYPES, EXPENSE_CATEGORIES } from '../constants'
 import { luggageCompletionRate } from './luggage'
-import { planTotalSpend, planPackingRate, planSpendBreakdown } from './selectors'
+import {
+  planTotalSpend,
+  planPackingRate,
+  planSpendBreakdown,
+  recordTotalSpend,
+} from './selectors'
+
+// 从 YYYY-MM-DD 中取出 YYYY-MM；非法日期返回 null
+function monthKeyOf(date) {
+  if (typeof date !== 'string') return null
+  const match = date.match(/^(\d{4})-(\d{2})-\d{2}$/)
+  return match ? `${match[1]}-${match[2]}` : null
+}
+
+// 在 YYYY-MM 上加减月数
+function shiftMonth(key, delta) {
+  const [year, month] = key.split('-').map(Number)
+  const date = new Date(year, month - 1 + delta, 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+// 月度花费趋势：按记录的花费月份汇总，与总花费同口径（逐条记录计一次，不重复计算）；
+// 首末月之间没有花费的月份补 0 保留在序列中
+export function computeMonthlySpend(plans) {
+  const buckets = new Map()
+  plans.forEach((p) => {
+    ;(p.records || []).forEach((r) => {
+      // 记录日期缺失时退回出行出发月份，保证每条花费都计入且只计入一次
+      const key = monthKeyOf(r.date) || monthKeyOf(p.startDate)
+      if (!key) return
+      buckets.set(key, (buckets.get(key) || 0) + recordTotalSpend(r))
+    })
+  })
+
+  if (!buckets.size) return []
+
+  const keys = [...buckets.keys()].sort()
+  const series = []
+  for (let key = keys[0]; ; key = shiftMonth(key, 1)) {
+    series.push({ key, label: `${Number(key.slice(5))}月`, value: buckets.get(key) || 0 })
+    if (key === keys[keys.length - 1]) break
+  }
+  return series
+}
 
 // ===== 出行看板统计 =====
 export function computeDashboardStats(plans) {
@@ -40,6 +83,9 @@ export function computeDashboardStats(plans) {
   // 各次出行花费对比
   const perTripSpend = plans.map((p) => ({ label: p.name, value: planTotalSpend(p) }))
 
+  // 月度花费趋势
+  const monthlySpend = computeMonthlySpend(plans)
+
   return {
     totalTrips,
     totalSpend,
@@ -51,6 +97,7 @@ export function computeDashboardStats(plans) {
     tripTypeDist,
     categorySpend,
     perTripSpend,
+    monthlySpend,
   }
 }
 

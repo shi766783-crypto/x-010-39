@@ -5,18 +5,14 @@ function toNum(value) {
   return Number(value) || 0
 }
 
+// 单条行程记录花费（总花费、分类汇总与月度趋势共用同一口径）
+export function recordTotalSpend(record) {
+  return EXPENSE_CATEGORIES.reduce((sum, { key }) => sum + toNum(record[key]), 0)
+}
+
 // 单次出行总花费
 export function planTotalSpend(plan) {
-  return (plan.records || []).reduce(
-    (sum, r) =>
-      sum +
-      toNum(r.transportCost) +
-      toNum(r.mealCost) +
-      toNum(r.ticketCost) +
-      toNum(r.shoppingCost) +
-      toNum(r.otherCost),
-    0
-  )
+  return (plan.records || []).reduce((sum, r) => sum + recordTotalSpend(r), 0)
 }
 
 // 单次出行花费分类汇总
