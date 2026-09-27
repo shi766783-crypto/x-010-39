@@ -5,6 +5,7 @@ import { useTravelStore } from '../stores/travel'
 import { formatMoney } from '../utils/format'
 import BarChart from '../components/charts/BarChart.vue'
 import DonutChart from '../components/charts/DonutChart.vue'
+import LineChart from '../components/charts/LineChart.vue'
 
 const store = useTravelStore()
 const router = useRouter()
@@ -46,6 +47,16 @@ const statCards = computed(() => [
           <h3 class="card-title">花费分类汇总</h3>
           <DonutChart :data="stats.categorySpend" :formatter="money" />
         </div>
+      </div>
+
+      <div class="card mt-16">
+        <h3 class="card-title">月度花费趋势</h3>
+        <LineChart
+          v-if="stats.monthlySpend.length"
+          :data="stats.monthlySpend"
+          :formatter="money"
+        />
+        <p v-else class="empty">还没有花费记录，在出行计划中添加行程记录后即可查看月度趋势</p>
       </div>
 
       <div class="card mt-16">

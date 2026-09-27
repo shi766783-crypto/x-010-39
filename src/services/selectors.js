@@ -5,18 +5,20 @@ function toNum(value) {
   return Number(value) || 0
 }
 
+// 单条行程记录花费合计（各统计口径统一由此计算，避免重复或遗漏）
+export function recordTotalSpend(record) {
+  return (
+    toNum(record.transportCost) +
+    toNum(record.mealCost) +
+    toNum(record.ticketCost) +
+    toNum(record.shoppingCost) +
+    toNum(record.otherCost)
+  )
+}
+
 // 单次出行总花费
 export function planTotalSpend(plan) {
-  return (plan.records || []).reduce(
-    (sum, r) =>
-      sum +
-      toNum(r.transportCost) +
-      toNum(r.mealCost) +
-      toNum(r.ticketCost) +
-      toNum(r.shoppingCost) +
-      toNum(r.otherCost),
-    0
-  )
+  return (plan.records || []).reduce((sum, r) => sum + recordTotalSpend(r), 0)
 }
 
 // 单次出行花费分类汇总

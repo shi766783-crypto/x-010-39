@@ -1,6 +1,36 @@
 import { TRIP_TYPES, EXPENSE_CATEGORIES } from '../constants'
 import { luggageCompletionRate } from './luggage'
-import { planTotalSpend, planPackingRate, planSpendBreakdown } from './selectors'
+import { planTotalSpend, planPackingRate, planSpendBreakdown, recordTotalSpend } from './selectors'
+
+// 月度花费趋势：按行程记录日期所在月份汇总（与总花费同一口径，每条记录只计入一次），
+// 首末月份之间没有花费的月份补 0 占位，保证时间序列连续
+function computeMonthlySpend(plans) {
+  const byMonth = new Map()
+  plans.forEach((p) => {
+    ;(p.records || []).forEach((r) => {
+      const month = typeof r.date === 'string' ? r.date.slice(0, 7) : ''
+      if (!/^\d{4}-\d{2}$/.test(month)) return
+      byMonth.set(month, (byMonth.get(month) || 0) + recordTotalSpend(r))
+    })
+  })
+  if (!byMonth.size) return []
+
+  const sorted = [...byMonth.keys()].sort()
+  let [y, m] = sorted[0].split('-').map(Number)
+  const [endY, endM] = sorted[sorted.length - 1].split('-').map(Number)
+
+  const months = []
+  while (y < endY || (y === endY && m <= endM)) {
+    const key = `${y}-${String(m).padStart(2, '0')}`
+    months.push({ label: key, value: byMonth.get(key) || 0 })
+    m += 1
+    if (m > 12) {
+      m = 1
+      y += 1
+    }
+  }
+  return months
+}
 
 // ===== 出行看板统计 =====
 export function computeDashboardStats(plans) {
@@ -51,6 +81,7 @@ export function computeDashboardStats(plans) {
     tripTypeDist,
     categorySpend,
     perTripSpend,
+    monthlySpend: computeMonthlySpend(plans),
   }
 }
 
